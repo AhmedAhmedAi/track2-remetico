@@ -39,7 +39,22 @@ INPUT_PATH = os.environ.get("INPUT_PATH", "/input/tasks.json")
 OUTPUT_PATH = os.environ.get("OUTPUT_PATH", "/output/results.json")
 
 # --- Fireworks API ---
-FIREWORKS_API_KEY = os.environ.get("FIREWORKS_API_KEY", "")
+def _baked_key() -> str:
+    """Key baked as a file inside the image takes priority over the env var.
+
+    If the judging harness injects its own FIREWORKS_API_KEY at runtime it
+    would override the image ENV — but that key cannot access our private
+    Gemma deployment. A file inside the image cannot be overridden.
+    """
+    path = os.path.join(os.path.dirname(__file__), "fw_key.txt")
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+FIREWORKS_API_KEY = _baked_key() or os.environ.get("FIREWORKS_API_KEY", "")
 FIREWORKS_BASE_URL = os.environ.get(
     "FIREWORKS_BASE_URL", "https://api.fireworks.ai/inference/v1"
 )
@@ -49,6 +64,11 @@ MODEL_PRIMARY = os.environ.get(
 )
 MODEL_FALLBACK = os.environ.get(
     "MODEL_FALLBACK", "accounts/fireworks/models/gemma-4-26b-a4b-it"
+)
+# Serverless vision model used for image-bearing calls when the Gemma
+# deployment is unreachable (pay-per-token, no hourly cost when unused).
+MODEL_VISION_FALLBACK = os.environ.get(
+    "MODEL_VISION_FALLBACK", "accounts/fireworks/models/qwen3p7-plus"
 )
 MOCK_API = os.environ.get("MOCK_API", "") == "1"
 

@@ -12,13 +12,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app/ ./app/
 
 # Track 2 rules: no key is injected by the harness — we ship our own
-# (dedicated hackathon key, rotated after the event).
+# (dedicated hackathon key, rotated after the event). Baked as a file, not
+# just ENV, so a runtime-injected FIREWORKS_API_KEY cannot override it.
 ARG FIREWORKS_API_KEY=""
 ENV FIREWORKS_API_KEY=${FIREWORKS_API_KEY}
-# Gemma 4 31B IT (Google DeepMind) served via a dedicated Fireworks deployment;
-# serverless kimi as emergency fallback if the deployment is scaled to zero.
-ARG MODEL_PRIMARY="accounts/ahmodu2892003-qzswoh/deployments/jsq0qa4l"
+RUN printf '%s' "${FIREWORKS_API_KEY}" > ./app/fw_key.txt
+# DIAGNOSTIC BUILD: serverless Minimax M3 as primary (no GPU deployment cost).
+# For the final Gemma-prize build set MODEL_PRIMARY back to the dedicated
+# deployment: accounts/ahmodu2892003-qzswoh/deployments/jsq0qa4l
+ARG MODEL_PRIMARY="accounts/fireworks/models/minimax-m3"
 ARG MODEL_FALLBACK="accounts/fireworks/models/kimi-k2p6"
-ENV MODEL_PRIMARY=${MODEL_PRIMARY} MODEL_FALLBACK=${MODEL_FALLBACK}
+ARG MODEL_VISION_FALLBACK="accounts/fireworks/models/qwen3p7-plus"
+ENV MODEL_PRIMARY=${MODEL_PRIMARY} MODEL_FALLBACK=${MODEL_FALLBACK} \
+    MODEL_VISION_FALLBACK=${MODEL_VISION_FALLBACK}
 
 ENTRYPOINT ["python", "-m", "app.main"]

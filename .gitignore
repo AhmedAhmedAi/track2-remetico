@@ -34,3 +34,4 @@ test/input/tasks_one.json
 test/input/tasks_fail.json
 test/input/dress_candidates.json
 Participant Guide*.pdf
+app/fw_key.txt

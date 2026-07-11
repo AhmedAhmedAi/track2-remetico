@@ -60,8 +60,15 @@ async def _chat(messages: list[dict], temperature: float, max_tokens: int = 1200
     client = _get_client()
     last_err: Exception | None = None
     mt = max_tokens
+    # Image-bearing calls need a fallback model that can actually see.
+    has_images = any(
+        isinstance(m.get("content"), list)
+        and any(p.get("type") == "image_url" for p in m["content"])
+        for m in messages
+    )
+    fallback = config.MODEL_VISION_FALLBACK if has_images else config.MODEL_FALLBACK
     for attempt in range(config.API_RETRIES + 1):
-        model = config.MODEL_PRIMARY if attempt < 2 else config.MODEL_FALLBACK
+        model = config.MODEL_PRIMARY if attempt < 2 else fallback
         try:
             body = {
                 "model": model,
