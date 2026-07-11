@@ -1,0 +1,36 @@
+# secrets
+.env
+*.key
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# os
+.DS_Store
+
+# large media / test artifacts (not needed in repo)
+*.mp4
+*.wav
+*.webm
+*.ogv
+test/output/
+test/videos/
+frames_test/
+frames_dense/
+presentation/slides/
+presentation/segments/
+presentation/segments2/
+presentation/overlays/
+presentation/slides_v2_*.png
+presentation/*.pdf
+"Participant Guide"*.pdf
+test/eval_frames/
+test/input/tasks_local.json
+test/input/tasks_dress.json
+test/input/tasks_eval12.json
+test/input/tasks_one.json
+test/input/tasks_fail.json
+test/input/dress_candidates.json
+Participant Guide*.pdf

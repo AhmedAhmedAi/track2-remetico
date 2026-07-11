@@ -1,0 +1,110 @@
+[
+ {
+  "task_id": "e01",
+  "captions": {
+   "formal": "A static shot of a green grassy field with a prominent vertical lens flare shows a light-colored dog entering from the right and running toward a distant line of trees.",
+   "sarcastic": "Thrilling cinema at its finest: we wait through a vertical lens flare in a green field just for a white dog to run away from us.",
+   "humorous_tech": "The system is idling on a static screen of green grass and a vertical lens flare until a cream-colored dog finally deploys into the frame and runs toward the distant trees.",
+   "humorous_non_tech": "A white dog charges through a blinding beam of sunlight, clearly convinced that the far side of the field holds the secret to eternal happiness."
+  }
+ },
+ {
+  "task_id": "e02",
+  "captions": {
+   "formal": "The camera pans right across the New York City skyline during golden hour, capturing warm light reflecting off building facades and a construction crane atop a mid-height tower.",
+   "sarcastic": "A cinematic pan of New York City, because the world definitely needed another slow-motion look at the Empire State Building and some glass towers.",
+   "humorous_tech": "A slow cinematic pan of the New York City skyline is basically a high-resolution screen render loading from left to right, with the Empire State Building appearing as a legacy asset in the distance.",
+   "humorous_non_tech": "A slow pan across the New York City skyline shows the Empire State Building and golden reflections on glass towers, which is exactly how I feel when I realize I'm in the wrong neighborhood."
+  }
+ },
+ {
+  "task_id": "e03",
+  "captions": {
+   "formal": "A static shot captures a sunset over a harbor, featuring a mackerel sky with rippled orange and purple clouds reflecting on the undulating water.",
+   "sarcastic": "Thrilling footage of a static camera watching red water and a mackerel sky do absolutely nothing for nearly a minute.",
+   "humorous_tech": "This sunset is basically a high-resolution wallpaper that has completely frozen; the red water and rippled clouds are stuck in a permanent loading state over the harbor skyline.",
+   "humorous_non_tech": "The sky is putting on a dramatic red and purple show, but the industrial cranes on the horizon are just ignoring it like a teenager ignoring their chores."
+  }
+ },
+ {
+  "task_id": "e04",
+  "captions": {
+   "formal": "A high-angle wide shot captures Shibuya Crossing in Tokyo, where traffic including a white flatbed truck and an orange bus gives way to a massive wave of pedestrians crossing the zebra-striped intersection.",
+   "sarcastic": "Behold the peak of urban efficiency: an orange city bus departs just in time for hundreds of pedestrians to flood the zebra-stripe crosswalks.",
+   "humorous_tech": "Shibuya Crossing is basically a giant packet switch, transitioning from a few orange buses and white trucks to a massive data burst of pedestrians flooding the zebra crosswalks.",
+   "humorous_non_tech": "Wait for the orange bus to pass and then everyone just rushes the zebra-stripes at Shibuya Crossing like it is the last slice of pizza at a party."
+  }
+ },
+ {
+  "task_id": "e05",
+  "captions": {
+   "formal": "The camera executes a continuous backward movement, transitioning from a detailed view of rocky ridges to a wide panorama of jagged peaks and a distant city skyline.",
+   "sarcastic": "A drone pulls away from some pale granite rocks, because apparently we needed a wider view of the green forests to realize we're still in the mountains.",
+   "humorous_tech": "Starting with a close-up of rocky ridges and pulling back to show the distant city, this drone shot is basically a smooth transition from a detailed local variable to the global scope.",
+   "humorous_non_tech": "The camera pulls away from these pale granite rocks and green forests to show a distant city, which is exactly how I feel when I try to socially distance from my responsibilities."
+  }
+ },
+ {
+  "task_id": "e06",
+  "captions": {
+   "formal": "A close-up shot shows the hands of a dark-skinned person typing on a silver laptop, with a second hand joining the first to increase typing speed under warm yellow lighting.",
+   "sarcastic": "Behold the sheer intensity of a single hand typing on a grey keyboard, only to be joined by another in a desperate bid for speed.",
+   "humorous_tech": "A close-up of a silver laptop shows a single hand typing before a second hand joins in, mimicking a CPU scaling from single-core to multi-thread processing to handle the workload.",
+   "humorous_non_tech": "One hand on the silver keyboard wasn't enough, so a second hand enters the frame to help finish this very important email about a missing sock."
+  }
+ },
+ {
+  "task_id": "e07",
+  "captions": {
+   "formal": "A distorted, low-quality shot captures an urban street at night where red traffic lights transition to green over a wet asphalt road.",
+   "sarcastic": "A cinematic masterpiece where a traffic light changes from red to green through a lens so smudged it looks like a watercolor painting of a wet street.",
+   "humorous_tech": "This rainy night street is basically a low-resolution render with a major GPU artifact, as water droplets blur the yellow street lamps while the traffic light finally switches from red to green.",
+   "humorous_non_tech": "Trying to see the red traffic light change to green through this water-smudged lens is exactly how my vision works before my first coffee."
+  }
+ },
+ {
+  "task_id": "e08",
+  "captions": {
+   "formal": "In a static medium shot on an outdoor rooftop, a man in a grey t-shirt, a woman in a blue denim shirt, and a man in a black polo shirt converse around a brown table with three glasses of beer.",
+   "sarcastic": "A riveting intellectual summit where a man in a grey t-shirt gestures wildly and three beers remain completely untouched on the table.",
+   "humorous_tech": "A rooftop API call in progress where a man in a grey t-shirt sends a request, a woman in denim processes it with a laugh, and a man in a black polo returns a 200 OK response.",
+   "humorous_non_tech": "The guy in the grey t-shirt is trying way too hard to prove a point, while his friends just use the beer and rooftop views as a backdrop to laugh at his struggle."
+  }
+ },
+ {
+  "task_id": "e09",
+  "captions": {
+   "formal": "A static shot captures turquoise-grey ocean waves rhythmically breaking and washing white foam over a dark grey pebbled beach.",
+   "sarcastic": "Hold your breath for the climax as turquoise-grey waves wash over a shingle beach and then, in a shocking twist, do it again.",
+   "humorous_tech": "This static shot of white foam washing over dark grey pebbles is basically a loading screen for the ocean, stuck at 99% for 34 seconds.",
+   "humorous_non_tech": "The white foaming waves keep rolling onto the dark grey pebble beach, which is exactly the kind of rhythmic consistency I need in my life right now."
+  }
+ },
+ {
+  "task_id": "e10",
+  "captions": {
+   "formal": "A static, elevated shot captures a white and yellow commuter train numbered 5257 arriving at a platform beneath a vaulted metal truss ceiling.",
+   "sarcastic": "A man sits on a metal bench and waits with infinite patience until train 5257 finally arrives to disrupt his peace.",
+   "humorous_tech": "The passengers on the platform are in a sleep mode loop until train 5257 finally deploys, triggering a mass data transfer of commuters exiting the yellow cars.",
+   "humorous_non_tech": "A man sits on a metal bench and watches a yellow-fronted train 5257 arrive, probably wondering if the train is actually late or if he just arrived way too early."
+  }
+ },
+ {
+  "task_id": "e11",
+  "captions": {
+   "formal": "A person in a striped apron and light-colored shirt uses a chef's knife to dice green zucchini on a wooden cutting board, with a red-capped salt shaker nearby.",
+   "sarcastic": "A culinary masterpiece in the making: someone in a striped apron spends several seconds slicing zucchini on a wooden board before the camera simply gives up and goes blurry.",
+   "humorous_tech": "The chef is running a data-parsing script on these green vegetables with a sharp knife on a wooden board, but the system crashes into a green screen error at the end.",
+   "humorous_non_tech": "Chopping zucchini with the focus of a Michelin-star chef, while actually just guessing if that red-capped shaker is salt or sugar."
+  }
+ },
+ {
+  "task_id": "e12",
+  "captions": {
+   "formal": "A static shot captures a red athletic track with white lane numbers 1-6, where a man in a grey sleeveless top and blue shorts sprints across the frame from left to right.",
+   "sarcastic": "Truly an elite performance: a man in a grey sleeveless top sprints across the red track, leaving the dark green trees completely unimpressed.",
+   "humorous_tech": "The red running track is basically a loading screen until a man in blue shorts enters the frame like a high-speed data packet delivering a payload across lanes 1-6.",
+   "humorous_non_tech": "A man in blue athletic shorts sprints across the red track so fast he's just a blur, probably because he remembered he left the stove on."
+  }
+ }
+]

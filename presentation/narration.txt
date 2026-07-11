@@ -1,0 +1,17 @@
+CineGemma. An all-Gemma video captioning agent, built for the AMD Developer Hackathon.
+
+The task: watch any video clip and write captions in four distinct styles. Formal. Sarcastic. Tech humor. And everyday humor. Every caption is judged on accuracy and on tone.
+
+CineGemma works as a team of Gemma agents. A motion-adaptive sampler picks the key frames. Gemma vision writes a detailed fact sheet. Four style writers draft six candidates each. Four judges score them with the official rubric, and weak captions get a rewrite.
+
+Here it is on a real clip. Gemma recognizes the New York City skyline, the golden hour light, even a construction crane on a tower.
+
+Here, it names Shibuya Crossing in Tokyo, and jokes about the wave of pedestrians with dry sarcasm.
+
+And for this meadow, it turns a running dog into everyday comedy, grounded in what is actually on screen.
+
+Under the hood: twelve videos processed in parallel in under three minutes. Every request capped at twenty-five seconds. Structured output guaranteed. And a triple fallback ladder, so every clip always gets every caption.
+
+Tested on twelve varied clips across nature, cities, animals, people, sports, food, weather and technology. Blind judging scored it above zero point eight five, one hundred percent Gemma, end to end.
+
+CineGemma. Every caption computed fresh. Nothing hardcoded. Built for the hidden set.
