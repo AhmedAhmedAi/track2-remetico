@@ -140,9 +140,23 @@ async def fact_sheet(frames_b64: list[str], timestamps: list[float],
     return await _chat(messages, temperature=0.2, max_tokens=2500, label="fact_sheet")
 
 
+def _category_hint(fact: str | None) -> str:
+    """Build a focus hint from the CATEGORY line the fact sheet itself wrote."""
+    if not fact:
+        return ""
+    m = re.search(r"CATEGORY[:\s*]*(.+)", fact, re.IGNORECASE)
+    scope = m.group(1) if m else fact[-300:]
+    hints = [h for cat, h in prompts.CATEGORY_HINTS.items() if cat in scope.lower()]
+    if not hints:
+        return ""
+    return ("FOCUS for this kind of video: prioritize " + "; ".join(hints[:2]) + ".\n")
+
+
 async def write_candidates(style: str, frames_b64: list[str],
-                           timestamps: list[float], fact: str) -> list[str]:
+                           timestamps: list[float], fact: str | None) -> list[str]:
     spec = prompts.STYLE_SPECS[style]
+    fact = fact or ("(fact sheet unavailable — analyze the attached frames "
+                    "directly and describe only what you can verify in them)")
     ts = ", ".join(f"{t:.0f}s" for t in timestamps)
     messages = [
         {"role": "system",
@@ -150,16 +164,16 @@ async def write_candidates(style: str, frames_b64: list[str],
         {"role": "user", "content": [
             {"type": "text", "text": prompts.WRITER_USER.format(
                 fact_sheet=fact, timestamps=ts, n=config.N_CANDIDATES,
-                instructions=spec["instructions"], examples=spec["examples"])},
+                instructions=spec["instructions"], examples=spec["examples"],
+                category_hint=_category_hint(fact))},
             *_image_parts(frames_b64, limit=config.WRITER_MAX_FRAMES),
         ]},
     ]
     writer_budget = 1200 if config.N_CANDIDATES <= 1 else 2500
+    # No enforced JSON schema here: schema mode triggers M3's hidden thinking
+    # (slow under load); the tolerant parser handles free-form JSON output.
     raw = await _chat(messages, temperature=spec["temperature"],
-                      max_tokens=writer_budget, label=f"writer:{style}",
-                      schema={"type": "object", "properties": {"captions": {
-                          "type": "array", "items": {"type": "string"}}},
-                          "required": ["captions"]})
+                      max_tokens=writer_budget, label=f"writer:{style}")
     data = _extract_json(raw)
     if isinstance(data, dict):
         data = data.get("captions", [])
@@ -248,32 +262,24 @@ async def _text_only_caption(style: str, fact: str) -> str:
 
 async def caption_style(style: str, frames_b64: list[str],
                         timestamps: list[float], fact: str) -> str:
-    """Full per-style flow: write N -> judge -> maybe refine. Never raises."""
+    """Per-style flow: write N candidates, writer self-ranks, take the best.
+
+    Separate judge/refine calls were removed: blind testing showed they added
+    no measurable quality, and the saved time pays for denser frame coverage.
+    Never raises.
+    """
     try:
         cands = await write_candidates(style, frames_b64, timestamps, fact)
     except Exception as e:  # noqa: BLE001
         log.error("writer:%s failed entirely: %r", style, e)
         try:
+            if not fact:
+                raise ValueError("no fact sheet for text-only fallback")
             return await _text_only_caption(style, fact)
         except Exception as e2:  # noqa: BLE001
             log.error("textonly:%s also failed: %r", style, e2)
             return _fallback(style, fact)
-    # Fast mode: a single candidate and no judging (fits tight time budgets).
-    if config.N_CANDIDATES <= 1 or len(cands) == 1:
-        return cands[0]
-    try:
-        best, score, crit = await judge(style, frames_b64, fact, cands)
-    except Exception as e:  # noqa: BLE001
-        log.error("judge:%s failed, using first candidate: %s", style, e)
-        return cands[0]
-    if score < config.REFINE_THRESHOLD:
-        try:
-            improved = await refine(style, frames_b64, fact, best, crit)
-            if improved and len(improved) > 10:
-                return improved
-        except Exception as e:  # noqa: BLE001
-            log.warning("refine:%s failed, keeping judged best: %s", style, e)
-    return best
+    return cands[0]  # writer returns candidates ordered best first
 
 
 def _fallback(style: str, fact: str | None) -> str:

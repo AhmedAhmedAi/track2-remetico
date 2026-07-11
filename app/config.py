@@ -81,10 +81,10 @@ API_RETRIES = _int("API_RETRIES", 3)
 # --- Frame sampling ---
 THUMB_WIDTH = 320          # tiny frames for motion analysis
 FRAME_WIDTH = 768          # frames sent to Gemma
-MIN_FRAMES = _int("MIN_FRAMES", 6)
-MAX_FRAMES = _int("MAX_FRAMES", 24)
-SECONDS_PER_FRAME = _float("SECONDS_PER_FRAME", 4.0)  # budget = duration/this
-WRITER_MAX_FRAMES = _int("WRITER_MAX_FRAMES", 14)     # writers/judges get subset
+MIN_FRAMES = _int("MIN_FRAMES", 10)
+MAX_FRAMES = _int("MAX_FRAMES", 40)
+SECONDS_PER_FRAME = _float("SECONDS_PER_FRAME", 3.0)  # budget = duration/this
+WRITER_MAX_FRAMES = _int("WRITER_MAX_FRAMES", 24)     # writers get subset
 JPEG_QUALITY = _int("JPEG_QUALITY", 4)                # ffmpeg -q:v (2=best, 6=ok)
 
 # --- Caption generation ---

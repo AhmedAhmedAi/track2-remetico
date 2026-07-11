@@ -44,9 +44,21 @@ async def process_task(task: dict, stagger: float = 0.0) -> None:
     data = await frames.extract_frames(str(task.get("video_url", "")), task_id)
     fb64, ts, dur = data["frames_b64"], data["timestamps"], data["duration"]
 
-    fact = await captioner.fact_sheet(fb64, ts, dur)
+    # Lifeline ladder: full fact sheet -> half-frames fact sheet -> no fact
+    # sheet at all (writers still caption directly from the frames).
+    fact = None
+    try:
+        fact = await captioner.fact_sheet(fb64, ts, dur)
+    except Exception as e:  # noqa: BLE001
+        log.warning("task %s: fact sheet failed (%s), retrying with half frames", task_id, e)
+        try:
+            fact = await captioner.fact_sheet(fb64[::2], ts[::2], dur)
+        except Exception as e2:  # noqa: BLE001
+            log.error("task %s: half-frame fact sheet also failed (%s) — "
+                      "writers will work from frames alone", task_id, e2)
     entry["fact"] = fact
-    log.info("task %s: fact sheet ready (%.0fs elapsed)", task_id, time.monotonic() - t0)
+    log.info("task %s: fact sheet %s (%.0fs elapsed)", task_id,
+             "ready" if fact else "UNAVAILABLE", time.monotonic() - t0)
 
     async def one_style(style: str) -> None:
         caption = await captioner.caption_style(style, fb64, ts, fact)
@@ -58,7 +70,7 @@ async def process_task(task: dict, stagger: float = 0.0) -> None:
 
 async def run_all(tasks: list[dict]) -> None:
     results = await asyncio.gather(
-        *[process_task(t, stagger=i * 1.5) for i, t in enumerate(tasks)],
+        *[process_task(t, stagger=i * 1.0) for i, t in enumerate(tasks)],
         return_exceptions=True,
     )
     for task, res in zip(tasks, results):
@@ -101,10 +113,10 @@ async def amain() -> int:
             raise ValueError("tasks.json is not a list")
     except Exception as e:  # noqa: BLE001
         log.critical("cannot read input tasks: %s", e)
-        # Still write an empty-but-valid results file.
+        # Still write an empty-but-valid results file. Exit 0 per contract.
         STATE.clear()
         write_results()
-        return 1
+        return 0
 
     for task in tasks:
         task_id = str(task.get("task_id", ""))
