@@ -70,6 +70,16 @@ MODEL_FALLBACK = os.environ.get(
 MODEL_VISION_FALLBACK = os.environ.get(
     "MODEL_VISION_FALLBACK", "accounts/fireworks/models/qwen3p7-plus"
 )
+# Second, text-only humor writer: a frontier text model doubles the joke
+# pool from the fact sheet; the selector picks across both. Empty disables.
+MODEL_HUMOR_2 = os.environ.get(
+    "MODEL_HUMOR_2", "accounts/fireworks/models/kimi-k2p6"
+)
+# Second vision model that cross-checks the fact sheet's VERIFIED claims.
+# Empty disables.
+MODEL_FACT_CHECK = os.environ.get(
+    "MODEL_FACT_CHECK", "accounts/fireworks/models/qwen3p7-plus"
+)
 MOCK_API = os.environ.get("MOCK_API", "") == "1"
 
 # --- Timing budgets (seconds) ---

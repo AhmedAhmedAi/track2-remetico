@@ -77,7 +77,10 @@ _WRITER_COMMON = (
     "VERIFIED; no animal breed names (say 'tan dog', not 'golden retriever'); "
     "no building/brand/place names unless VERIFIED in the fact sheet; no "
     "camera-motion claims beyond the measured motion profile; no seconds "
-    "counts like 'after 18 seconds' ever.\n"
+    "counts like 'after 18 seconds' ever; no first-person voice ('my', 'I') — "
+    "captions are third-person observations; no claims about what a screen, "
+    "billboard, or sign DISPLAYS unless VERIFIED; never describe video "
+    "artifacts (face blurring, watermarks, compression) as scene features.\n"
     "- No hashtags, no emojis, no quotation marks around the caption\n"
     "Write {n} different candidate captions, then rank your own candidates: "
     "ACCURACY FIRST (zero invented or banned details, grounded in THIS "
@@ -114,9 +117,11 @@ STYLE_SPECS = {
             "understatement, mock admiration ('Ah yes...'), or pointing out the "
             "obvious with fake enthusiasm. Clever, not cruel. LENGTH: ONE punchy "
             "sentence, 15-25 words, never more than 30. SARCASTIC BUT STILL "
-            "ACCURATE: build the irony on what the subject actually does, "
-            "anchored by 2 concrete visible specifics — generic sarcasm that "
-            "ignores this video scores zero."
+            "ACCURATE: aim the irony at the subject's BEHAVIOR or the "
+            "situation's absurdity, anchored by 2 concrete visible specifics. "
+            "Never build the joke on clothing colors, sign/billboard contents, "
+            "or anything a viewer could not instantly verify — generic sarcasm "
+            "that ignores this video scores zero."
         ),
         "examples": (
             "Example captions in this style (for OTHER, unrelated videos):\n"
@@ -200,8 +205,11 @@ SELECT_SYSTEM = (
     "unverifiable details; specific to THIS video) and style fit equally.\n"
     "Step 1 — STRIKE: eliminate any candidate that (a) states a number, "
     "name, breed, or camera move you cannot verify in the frames/fact sheet, "
-    "(b) contains a spelling error, (c) uses a metaphor whose logic breaks, "
-    "or (d) could caption a thousand other videos.\n"
+    "(b) contains a spelling error or doubled words, (c) uses a metaphor "
+    "whose logic breaks, (d) could caption a thousand other videos, "
+    "(e) uses first-person voice, (f) claims what a screen/billboard/sign "
+    "displays without verification, or (g) violates the style-specific bans "
+    "given below.\n"
     "Step 2 — PICK: among survivors choose the one a harsh judge would score "
     "highest: accurate, pinned to this video, and for humor styles genuinely "
     "funny with ONE clean premise, punchline at the end.\n"
@@ -213,11 +221,22 @@ SELECT_SYSTEM = (
 )
 
 SELECT_USER = (
-    "TARGET STYLE: {style} — {style_def}\n\n"
+    "TARGET STYLE: {style} — {style_def}\n"
+    "STYLE-SPECIFIC BANS: {style_bans}\n\n"
     "FACT SHEET:\n{fact_sheet}\n\n"
     "CANDIDATE CAPTIONS:\n{candidates}\n\n"
     "Frames attached. Strike, pick, repair if needed. JSON only."
 )
+
+STYLE_BANS = {
+    "formal": "no jokes, opinions, or exclamation marks",
+    "sarcastic": "no jokes built on clothing colors or on unverified sign/billboard contents",
+    "humorous_tech": "the tech metaphor's mechanics must genuinely match the scene",
+    "humorous_non_tech": ("STRIKE ON SIGHT any candidate containing ANY technology word: "
+                          "WiFi, CPU, app, online, internet, phone, computer, code, "
+                          "software, battery, screen-time, AI, robot, download, or "
+                          "similar — this style must be 100% jargon-free"),
+}
 
 JUDGE_SYSTEM = (
     "You are a strict caption evaluation judge. You receive: frames from a "
@@ -255,6 +274,27 @@ REFINE_USER = (
     "A judge reviewed this caption:\n  CAPTION: {caption}\n  CRITIQUE: {critique}\n\n"
     "Rewrite the caption fixing the critique while keeping what works. "
     "Same style, 1-2 sentences, English. Return ONLY the rewritten caption text."
+)
+
+# Text-only humor writer (second, frames-free joke pool from the fact sheet).
+TEXT_WRITER_USER = (
+    "FACT SHEET of a video (compiled by a visual analyst — treat it as the "
+    "complete ground truth; you have no frames, so use ONLY facts from it "
+    "and invent nothing):\n{fact_sheet}\n\n{instructions}\n{category_hint}\n"
+    "{examples}\n\n"
+    "Now write {n} candidate captions for THIS video in this style, each "
+    "from a DIFFERENT comedic angle, ordered best first. "
+    "JSON only: {{\"captions\": [...]}}"
+)
+
+# Second-model verification of the fact sheet's risky claims.
+FACT_CHECK_USER = (
+    "Below is a fact sheet another analyst wrote for the attached video "
+    "frames. Independently verify its risky claims: every named place, "
+    "landmark, brand, quoted text/number, animal species, and count. "
+    "Return ONLY JSON: {{\"unconfirmed\": [\"claim 1\", \"claim 2\", ...]}} — "
+    "listing claims you cannot personally confirm from the frames "
+    "(empty list if everything checks out).\n\nFACT SHEET:\n{fact_sheet}"
 )
 
 # Last-resort fallbacks, built from whatever partial info survived a failure.

@@ -47,7 +47,8 @@ def _image_parts(frames_b64: list[str], limit: int | None = None) -> list[dict]:
 
 
 async def _chat(messages: list[dict], temperature: float, max_tokens: int = 1200,
-                label: str = "", schema: dict | None = None) -> str:
+                label: str = "", schema: dict | None = None,
+                model: str | None = None) -> str:
     """One chat completion with retries and Gemma-to-Gemma model fallback.
 
     When `schema` is given, the server enforces JSON output matching it
@@ -67,11 +68,12 @@ async def _chat(messages: list[dict], temperature: float, max_tokens: int = 1200
         for m in messages
     )
     fallback = config.MODEL_VISION_FALLBACK if has_images else config.MODEL_FALLBACK
+    primary = model or config.MODEL_PRIMARY
     for attempt in range(config.API_RETRIES + 1):
-        model = config.MODEL_PRIMARY if attempt < 2 else fallback
+        model_used = primary if attempt < 2 else fallback
         try:
             body = {
-                "model": model,
+                "model": model_used,
                 "messages": messages,
                 "temperature": temperature,
                 "max_tokens": mt,
@@ -98,7 +100,7 @@ async def _chat(messages: list[dict], temperature: float, max_tokens: int = 1200
             return content
         except Exception as e:  # noqa: BLE001
             last_err = e
-            log.warning("%s call attempt %d (%s) failed: %s", label, attempt + 1, model, e)
+            log.warning("%s call attempt %d (%s) failed: %s", label, attempt + 1, model_used, e)
             await asyncio.sleep(min(2 ** attempt, 8))
     raise RuntimeError(f"{label} failed after retries: {last_err}")
 
@@ -185,6 +187,52 @@ async def write_candidates(style: str, frames_b64: list[str],
     return cands[: config.N_CANDIDATES + 2]
 
 
+async def write_candidates_text(style: str, fact: str) -> list[str]:
+    """Second joke pool from a frontier text model, working from the fact
+    sheet alone (no frames). Humor styles only."""
+    spec = prompts.STYLE_SPECS[style]
+    messages = [
+        {"role": "system",
+         "content": prompts._WRITER_COMMON.format(n=config.N_CANDIDATES)},
+        {"role": "user", "content": prompts.TEXT_WRITER_USER.format(
+            fact_sheet=fact, n=config.N_CANDIDATES,
+            instructions=spec["instructions"].replace("{n}", str(config.N_CANDIDATES)),
+            examples=spec["examples"], category_hint=_category_hint(fact))},
+    ]
+    raw = await _chat(messages, temperature=spec["temperature"],
+                      max_tokens=2500, label=f"writer2:{style}",
+                      model=config.MODEL_HUMOR_2)
+    data = _extract_json(raw)
+    if isinstance(data, dict):
+        data = data.get("captions", [])
+    cands = [str(c).strip() for c in data if str(c).strip()] if isinstance(data, list) else []
+    if not cands:
+        raise ValueError(f"writer2:{style} returned no usable candidates")
+    return cands[: config.N_CANDIDATES]
+
+
+async def fact_check(frames_b64: list[str], fact: str) -> str:
+    """Second vision model cross-checks risky claims; unconfirmed ones are
+    appended as warnings so writers/selector treat them as unverified."""
+    messages = [
+        {"role": "user", "content": [
+            {"type": "text", "text": prompts.FACT_CHECK_USER.format(fact_sheet=fact)},
+            *_image_parts(frames_b64, limit=14),
+        ]},
+    ]
+    raw = await _chat(messages, temperature=0.1, max_tokens=800,
+                      label="fact_check", model=config.MODEL_FACT_CHECK)
+    data = _extract_json(raw)
+    claims = data.get("unconfirmed", []) if isinstance(data, dict) else []
+    claims = [str(c).strip() for c in claims if str(c).strip()][:8]
+    if not claims:
+        return fact
+    warn = ("\nSECOND-REVIEWER WARNING — the following claims could NOT be "
+            "independently confirmed; treat them as UNVERIFIED and never use "
+            "them in captions:\n" + "\n".join(f"- {c}" for c in claims))
+    return fact + warn
+
+
 async def judge_select(style: str, frames_b64: list[str], fact: str | None,
                        candidates: list[str]) -> str:
     """Tournament selector: strikes flawed candidates, picks and (minimally)
@@ -195,6 +243,7 @@ async def judge_select(style: str, frames_b64: list[str], fact: str | None,
         {"role": "user", "content": [
             {"type": "text", "text": prompts.SELECT_USER.format(
                 style=style, style_def=prompts.STYLE_DEFS[style],
+                style_bans=prompts.STYLE_BANS.get(style, "none"),
                 fact_sheet=fact or "(unavailable — verify against frames only)",
                 candidates=listing)},
             *_image_parts(frames_b64, limit=12),
@@ -299,10 +348,19 @@ async def caption_style(style: str, frames_b64: list[str],
     no measurable quality, and the saved time pays for denser frame coverage.
     Never raises.
     """
-    try:
-        cands = await write_candidates(style, frames_b64, timestamps, fact)
-    except Exception as e:  # noqa: BLE001
-        log.error("writer:%s failed entirely: %r", style, e)
+    humor = style in ("sarcastic", "humorous_tech", "humorous_non_tech")
+    writers = [write_candidates(style, frames_b64, timestamps, fact)]
+    if humor and config.MODEL_HUMOR_2 and fact:
+        writers.append(write_candidates_text(style, fact))
+    pools = await asyncio.gather(*writers, return_exceptions=True)
+    cands: list[str] = []
+    for p in pools:
+        if isinstance(p, list):
+            cands.extend(c for c in p if c not in cands)
+        else:
+            log.warning("a %s writer failed: %r", style, p)
+    if not cands:
+        log.error("all writers for %s failed", style)
         try:
             if not fact:
                 raise ValueError("no fact sheet for text-only fallback")
@@ -316,7 +374,7 @@ async def caption_style(style: str, frames_b64: list[str],
         return await judge_select(style, frames_b64, fact, cands)
     except Exception as e:  # noqa: BLE001
         log.warning("select:%s failed (%s) — keeping writer's top pick", style, e)
-        return cands[0]  # writer returns candidates ordered best first
+        return cands[0]  # writers return candidates ordered best first
 
 
 def _fallback(style: str, fact: str | None) -> str:
@@ -341,10 +399,12 @@ def _mock_response(messages: list[dict], label: str) -> str:
     if label == "fact_sheet":
         return ("1. SUBJECTS: mock subject\n2. SETTING: mock setting\n"
                 "3. ACTION TIMELINE: mock actions over time\n4. NOTABLE DETAILS: mock")
-    if label.startswith("writer:"):
+    if label.startswith(("writer:", "writer2:")):
         style = label.split(":", 1)[1]
         return json.dumps({"captions": [f"Mock {style} caption {i}"
                                         for i in range(config.N_CANDIDATES)]})
+    if label == "fact_check":
+        return json.dumps({"unconfirmed": []})
     if label.startswith("judge:"):
         return json.dumps({"scores": [
             {"index": 0, "accuracy": 0.9, "style": 0.9, "critique": "fine"}]})

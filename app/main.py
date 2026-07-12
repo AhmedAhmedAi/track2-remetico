@@ -57,6 +57,11 @@ async def process_task(task: dict, stagger: float = 0.0) -> None:
         except Exception as e2:  # noqa: BLE001
             log.error("task %s: half-frame fact sheet also failed (%s) — "
                       "writers will work from frames alone", task_id, e2)
+    if fact and config.MODEL_FACT_CHECK:
+        try:
+            fact = await captioner.fact_check(fb64, fact)
+        except Exception as e:  # noqa: BLE001
+            log.warning("task %s: fact cross-check skipped (%s)", task_id, e)
     entry["fact"] = fact
     log.info("task %s: fact sheet %s (%.0fs elapsed)", task_id,
              "ready" if fact else "UNAVAILABLE", time.monotonic() - t0)

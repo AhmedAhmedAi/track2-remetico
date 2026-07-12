@@ -23,7 +23,10 @@ RUN printf '%s' "${FIREWORKS_API_KEY}" > ./app/fw_key.txt
 ARG MODEL_PRIMARY="accounts/fireworks/models/minimax-m3"
 ARG MODEL_FALLBACK="accounts/fireworks/models/kimi-k2p6"
 ARG MODEL_VISION_FALLBACK="accounts/fireworks/models/qwen3p7-plus"
+ARG MODEL_HUMOR_2="accounts/fireworks/models/kimi-k2p6"
+ARG MODEL_FACT_CHECK="accounts/fireworks/models/qwen3p7-plus"
 ENV MODEL_PRIMARY=${MODEL_PRIMARY} MODEL_FALLBACK=${MODEL_FALLBACK} \
-    MODEL_VISION_FALLBACK=${MODEL_VISION_FALLBACK}
+    MODEL_VISION_FALLBACK=${MODEL_VISION_FALLBACK} \
+    MODEL_HUMOR_2=${MODEL_HUMOR_2} MODEL_FACT_CHECK=${MODEL_FACT_CHECK}
 
 ENTRYPOINT ["python", "-m", "app.main"]
