@@ -131,6 +131,21 @@ def _motion_scores(thumbs: list[str]) -> np.ndarray:
     return np.asarray(scores, dtype=np.float64)
 
 
+def _motion_profile(scores: np.ndarray) -> str:
+    """Coarse, measured motion description so no model has to guess it."""
+    if len(scores) < 2:
+        return "too short to profile"
+    m = float(scores.mean())
+    level = ("very low (near-static shot)" if m < 2 else
+             "low (calm scene or slow camera)" if m < 6 else
+             "moderate (steady activity or camera movement)" if m < 15 else
+             "high (busy scene, fast action or cuts)")
+    peak = int(scores.argmax())
+    peaky = float(scores.max()) > 2.5 * max(m, 1e-6)
+    spike = f"; biggest visual change around {peak}-{peak+1}s" if peaky else ""
+    return f"{level}{spike}"
+
+
 def _adaptive_timestamps(scores: np.ndarray, duration: float, budget: int) -> list[float]:
     """Spend `budget` frames where motion mass is, keeping full-timeline coverage.
 
@@ -208,6 +223,7 @@ async def extract_frames(url: str, task_id: str) -> dict:
             "frames_b64": [base64.b64encode(b).decode() for b in frames],
             "timestamps": kept_ts,
             "duration": duration,
+            "motion_profile": _motion_profile(scores),
         }
     finally:
         shutil.rmtree(workdir, ignore_errors=True)

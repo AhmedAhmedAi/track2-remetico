@@ -127,13 +127,14 @@ def _extract_json(text: str):
 # ------------------------------------------------------------------ pipeline
 
 async def fact_sheet(frames_b64: list[str], timestamps: list[float],
-                     duration: float) -> str:
+                     duration: float, motion: str = "unknown") -> str:
     ts = ", ".join(f"{t:.0f}s" for t in timestamps)
     messages = [
         {"role": "system", "content": prompts.FACT_SHEET_SYSTEM},
         {"role": "user", "content": [
             {"type": "text",
-             "text": prompts.FACT_SHEET_USER.format(duration=duration, timestamps=ts)},
+             "text": prompts.FACT_SHEET_USER.format(duration=duration, timestamps=ts,
+                                                    motion=motion or "unknown")},
             *_image_parts(frames_b64),
         ]},
     ]
@@ -164,7 +165,8 @@ async def write_candidates(style: str, frames_b64: list[str],
         {"role": "user", "content": [
             {"type": "text", "text": prompts.WRITER_USER.format(
                 fact_sheet=fact, timestamps=ts, n=config.N_CANDIDATES,
-                instructions=spec["instructions"], examples=spec["examples"],
+                instructions=spec["instructions"].replace("{n}", str(config.N_CANDIDATES)),
+                examples=spec["examples"],
                 category_hint=_category_hint(fact))},
             *_image_parts(frames_b64, limit=config.WRITER_MAX_FRAMES),
         ]},
@@ -181,6 +183,35 @@ async def write_candidates(style: str, frames_b64: list[str],
     if not cands:
         raise ValueError(f"writer:{style} returned no usable candidates")
     return cands[: config.N_CANDIDATES + 2]
+
+
+async def judge_select(style: str, frames_b64: list[str], fact: str | None,
+                       candidates: list[str]) -> str:
+    """Tournament selector: strikes flawed candidates, picks and (minimally)
+    repairs the best one. Raises on failure — caller falls back to cands[0]."""
+    listing = "\n".join(f"{i}: {c}" for i, c in enumerate(candidates))
+    messages = [
+        {"role": "system", "content": prompts.SELECT_SYSTEM},
+        {"role": "user", "content": [
+            {"type": "text", "text": prompts.SELECT_USER.format(
+                style=style, style_def=prompts.STYLE_DEFS[style],
+                fact_sheet=fact or "(unavailable — verify against frames only)",
+                candidates=listing)},
+            *_image_parts(frames_b64, limit=12),
+        ]},
+    ]
+    raw = await _chat(messages, temperature=0.1, max_tokens=900,
+                      label=f"select:{style}")
+    data = _extract_json(raw)
+    if not isinstance(data, dict):
+        raise ValueError("selector returned non-object")
+    text = str(data.get("caption") or "").strip().strip('"')
+    idx = data.get("best_index")
+    if len(text) >= 25:
+        return text
+    if isinstance(idx, int) and 0 <= idx < len(candidates):
+        return candidates[idx]
+    raise ValueError("selector returned no usable pick")
 
 
 async def judge(style: str, frames_b64: list[str], fact: str,
@@ -279,7 +310,13 @@ async def caption_style(style: str, frames_b64: list[str],
         except Exception as e2:  # noqa: BLE001
             log.error("textonly:%s also failed: %r", style, e2)
             return _fallback(style, fact)
-    return cands[0]  # writer returns candidates ordered best first
+    if len(cands) == 1:
+        return cands[0]
+    try:
+        return await judge_select(style, frames_b64, fact, cands)
+    except Exception as e:  # noqa: BLE001
+        log.warning("select:%s failed (%s) — keeping writer's top pick", style, e)
+        return cands[0]  # writer returns candidates ordered best first
 
 
 def _fallback(style: str, fact: str | None) -> str:
@@ -311,6 +348,8 @@ def _mock_response(messages: list[dict], label: str) -> str:
     if label.startswith("judge:"):
         return json.dumps({"scores": [
             {"index": 0, "accuracy": 0.9, "style": 0.9, "critique": "fine"}]})
+    if label.startswith("select:"):
+        return json.dumps({"best_index": 0, "caption": "Mock selected caption for testing purposes."})
     if label.startswith("refine:"):
         return "Mock refined caption"
     return "mock"

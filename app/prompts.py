@@ -18,12 +18,22 @@ FACT_SHEET_SYSTEM = (
     "3. ACTION TIMELINE: what happens over time with timestamps — movements, "
     "gestures, interactions, the situation unfolding, what changes between "
     "start and end.\n"
-    "4. NOTABLE DETAILS: every readable text/sign (quote it), camera style "
-    "(static, time-lapse, handheld, drone, pan, close-up), colors, sounds "
-    "implied, anything unusual or characterful.\n"
-    "5. CATEGORY: the 1-2 best fitting labels from: nature, urban, animals, "
+    "4. NOTABLE DETAILS: every readable text/sign, colors, anything unusual "
+    "or characterful. TEXT/NUMBER VERIFICATION: re-read every visible number "
+    "and sign character by character from the sharpest frame; quote it ONLY "
+    "if every character is clearly legible, prefixed VERIFIED. If any "
+    "character is uncertain, write 'unclear' — never guess digits or names.\n"
+    "5. SIGNATURE DETAIL: the single most distinctive, checkable visual that "
+    "separates this clip from similar footage (e.g. a mirror-polished floor, "
+    "a vertical lens flare, one hand typing). Also name the human feeling of "
+    "the scene in a few words (e.g. waiting alone, performing to no audience).\n"
+    "6. CATEGORY: the 1-2 best fitting labels from: nature, urban, animals, "
     "people, sports, food, weather, technology.\n"
-    "Only state what you can actually see. Never invent. If unsure, say 'unclear'."
+    "CERTAINTY RULES: only state what you can actually see. Mark any named "
+    "place, landmark, brand, animal breed, or count as VERIFIED only when "
+    "unmistakable (readable signage, iconic skyline); otherwise describe "
+    "generically or write 'unclear'. Never invent. Camera motion: report only "
+    "what the measured motion profile supports."
 )
 
 # Per-category guidance: what the caption should prioritize. The category is
@@ -41,6 +51,7 @@ CATEGORY_HINTS = {
 
 FACT_SHEET_USER = (
     "Frames from one video ({duration:.0f} seconds long), timestamps: {timestamps}. "
+    "Measured motion profile (from 1fps frame differencing): {motion}. "
     "Write the fact sheet."
 )
 
@@ -61,10 +72,18 @@ _WRITER_COMMON = (
     "signage, skyline, or unmistakable features), NAME IT — specific correct "
     "identifications score highly. If unsure, describe without naming.\n"
     "- Never invent things that are not there\n"
+    "- HARD BANS (breaking any of these makes a candidate worthless): no "
+    "exact numbers, durations, or counts unless the fact sheet marks them "
+    "VERIFIED; no animal breed names (say 'tan dog', not 'golden retriever'); "
+    "no building/brand/place names unless VERIFIED in the fact sheet; no "
+    "camera-motion claims beyond the measured motion profile; no seconds "
+    "counts like 'after 18 seconds' ever.\n"
     "- No hashtags, no emojis, no quotation marks around the caption\n"
     "Write {n} different candidate captions, then rank your own candidates: "
-    "ACCURACY FIRST (zero invented details, grounded in THIS video), style fit "
-    "second. Return them ORDERED FROM BEST TO WORST as JSON, nothing else: "
+    "ACCURACY FIRST (zero invented or banned details, grounded in THIS "
+    "video), style fit second, and demote any candidate containing a "
+    "spelling error below all others. Return them ORDERED FROM BEST TO WORST "
+    "as JSON, nothing else: "
     "{{\"captions\": [\"best caption\", \"second best\", ...]}}"
 )
 
@@ -114,9 +133,15 @@ STYLE_SPECS = {
             "references (bugs, deploys, CPUs, Wi-Fi, loading screens, AI, git, "
             "low battery...). THE FORMULA IS: tech humor PLUS real video "
             "details. Map ONE tech metaphor onto 1-2 things actually visible "
-            "in THIS video, so the joke only works for this clip. LENGTH: ONE "
-            "punchy sentence, 15-28 words, never more than 30 ('When you...' "
-            "meme energy welcome). Commit to a single joke — no rambling."
+            "in THIS video — and the metaphor's MECHANICS must genuinely match "
+            "the scene (a static image cannot 'buffer'; pick metaphors whose "
+            "logic holds). ONE premise per caption: if a caption contains a "
+            "second metaphor, delete it. Build on the SIGNATURE DETAIL from "
+            "the fact sheet when possible. Before writing, silently think of "
+            "{n} DIFFERENT comedic angles (different metaphors, not variants "
+            "of one) and write one caption per angle. LENGTH: ONE punchy "
+            "sentence, 15-28 words, never more than 30, setup from the video "
+            "first, punchline in the final words."
         ),
         "examples": (
             "Example captions in this style (for OTHER, unrelated videos):\n"
@@ -134,10 +159,15 @@ STYLE_SPECS = {
             "STYLE: humorous_non_tech — FUNNY FIRST: warm, relatable, everyday "
             "humour anyone would get. Absolutely NO technology words, no "
             "programming, no internet or gaming jargon (no 'speed-running', no "
-            "'NPC'). LENGTH: ONE punchy sentence, 15-25 words, never more than "
-            "30. Build ONE fresh relatable premise that fits what actually "
-            "happens in THIS video, anchored by at least one visible specific "
-            "('When you...' constructions welcome) — no stock jokes (landlords, "
+            "'NPC'). FIND THE HUMAN FEELING in the scene (being ditched, "
+            "waiting forever, performing with no audience, small victory) — "
+            "the fact sheet names it — and build the joke on that feeling, "
+            "not on describing the scene with a funny word. ONE premise per "
+            "caption, and the premise must parse literally against what is "
+            "on screen. Before writing, silently think of {n} DIFFERENT "
+            "relatable premises and write one caption per premise. LENGTH: "
+            "ONE punchy sentence, 15-25 words, never more than 30 ('When "
+            "you...' constructions welcome) — no stock jokes (landlords, "
             "Mondays, coffee) unless the video truly demands it."
         ),
         "examples": (
@@ -161,6 +191,33 @@ WRITER_USER = (
 )
 
 # ---------------------------------------------------------------------- judges
+
+# Tournament selector: picks the best candidate and strikes hallucinations.
+SELECT_SYSTEM = (
+    "You are a strict caption selector for a video captioning contest. You "
+    "receive: frames from a video, a fact sheet, a target style, and "
+    "candidate captions. The official rubric scores accuracy (no invented or "
+    "unverifiable details; specific to THIS video) and style fit equally.\n"
+    "Step 1 — STRIKE: eliminate any candidate that (a) states a number, "
+    "name, breed, or camera move you cannot verify in the frames/fact sheet, "
+    "(b) contains a spelling error, (c) uses a metaphor whose logic breaks, "
+    "or (d) could caption a thousand other videos.\n"
+    "Step 2 — PICK: among survivors choose the one a harsh judge would score "
+    "highest: accurate, pinned to this video, and for humor styles genuinely "
+    "funny with ONE clean premise, punchline at the end.\n"
+    "Step 3 — REPAIR (only if needed): if the winner has one removable flawed "
+    "clause, return a minimally corrected version; otherwise return it "
+    "unchanged. Never rewrite whole captions, never change the joke.\n"
+    "Return ONLY JSON: {\"best_index\": <int>, \"caption\": \"<final caption "
+    "text>\"}"
+)
+
+SELECT_USER = (
+    "TARGET STYLE: {style} — {style_def}\n\n"
+    "FACT SHEET:\n{fact_sheet}\n\n"
+    "CANDIDATE CAPTIONS:\n{candidates}\n\n"
+    "Frames attached. Strike, pick, repair if needed. JSON only."
+)
 
 JUDGE_SYSTEM = (
     "You are a strict caption evaluation judge. You receive: frames from a "

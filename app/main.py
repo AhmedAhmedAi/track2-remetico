@@ -46,13 +46,14 @@ async def process_task(task: dict, stagger: float = 0.0) -> None:
 
     # Lifeline ladder: full fact sheet -> half-frames fact sheet -> no fact
     # sheet at all (writers still caption directly from the frames).
+    motion = data.get("motion_profile", "unknown")
     fact = None
     try:
-        fact = await captioner.fact_sheet(fb64, ts, dur)
+        fact = await captioner.fact_sheet(fb64, ts, dur, motion)
     except Exception as e:  # noqa: BLE001
         log.warning("task %s: fact sheet failed (%s), retrying with half frames", task_id, e)
         try:
-            fact = await captioner.fact_sheet(fb64[::2], ts[::2], dur)
+            fact = await captioner.fact_sheet(fb64[::2], ts[::2], dur, motion)
         except Exception as e2:  # noqa: BLE001
             log.error("task %s: half-frame fact sheet also failed (%s) — "
                       "writers will work from frames alone", task_id, e2)
